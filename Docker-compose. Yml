@@ -1,0 +1,74 @@
+version: "3.9"
+
+services:
+  traefik:
+    image: traefik:v2.13
+    container_name: traefik
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.letsencrypt.acme.email=your-email@nolon.app
+      - --certificatesresolvers.letsencrypt.acme.storage=/acme.json
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/acme.json:/acme.json
+      - ./traefik/traefik.yml:/traefik.yml:ro
+      - ./traefik/dynamic.yml:/dynamic.yml:ro
+
+  postgres:
+    image: postgres:15
+    container_name: synapse_postgres
+    environment:
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: synapsepass
+      POSTGRES_DB: synapse
+    volumes:
+      - ./synapse/postgres_data:/var/lib/postgresql/data
+
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: synapse
+    depends_on:
+      - postgres
+    environment:
+      SYNAPSE_SERVER_NAME: chat.nolon.app
+      SYNAPSE_REPORT_STATS: "yes"
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: synapsepass
+      POSTGRES_DB: synapse
+      POSTGRES_HOST: postgres
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.synapse.rule=Host(`chat.nolon.app`)"
+      - "traefik.http.routers.synapse.entrypoints=websecure"
+      - "traefik.http.routers.synapse.tls.certresolver=letsencrypt"
+    volumes:
+      - ./synapse/data:/data
+
+  logistics-service:
+    build: ./logistics-service
+    container_name: nolon_logistics
+    depends_on:
+      - synapse
+    environment:
+      SYNAPSE_BASE_URL: "http://synapse:8008"
+      MATRIX_ADMIN_TOKEN: "YOUR_ADMIN_ACCESS_TOKEN"
+      PORT: 3000
+      SQLITE_FILE: /data/shipments.db
+      LOG_LEVEL: info
+      ERP_DB_CONNECTION: "simulated"
+    volumes:
+      - ./logistics-service/data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.logistics.rule=Host(`logistics.nolon.app`)"
+      - "traefik.http.routers.logistics.entrypoints=websecure"
+      - "traefik.http.routers.logistics.tls.certresolver=letsencrypt"
+    ports:
+      - "3000:3000"
