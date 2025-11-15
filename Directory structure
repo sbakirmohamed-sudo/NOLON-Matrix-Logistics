@@ -1,0 +1,20 @@
+nolon-matrix/
+├─ docker-compose.yml
+├─ traefik/
+│  ├─ traefik.yml
+│  ├─ dynamic.yml
+│  └─ acme.json
+├─ synapse/
+│  └─ data/
+├─ logistics-service/
+│  ├─ Dockerfile
+│  ├─ package.json
+│  ├─ bootstrap.js
+│  ├─ db.js
+│  ├─ scheduler.js
+│  ├─ erp-simulator.js
+│  ├─ .env
+│  └─ data/
+│     ├─ users.csv
+│     ├─ shipments.csv
+│     └─ status_updates.csv
