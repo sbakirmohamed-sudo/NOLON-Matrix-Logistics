@@ -1,0 +1,27 @@
+const fs = require('fs');
+const path = require('path');
+const updatesFile = path.join(__dirname, 'data/status_updates.csv');
+
+function randomStatus() {
+  const statuses = ['Loading', 'In Transit', 'Arrived at Hub', 'Customs', 'Delivered'];
+  return statuses[Math.floor(Math.random() * statuses.length)];
+}
+function randomLocation() {
+  const locations = ['Port Sudan', 'Highway 1', 'Khartoum', 'Omdurman', 'Warehouse'];
+  return locations[Math.floor(Math.random() * locations.length)];
+}
+function generateUpdate() {
+  const shipmentIds = ['RSPS-001', 'RSPS-002'];
+  const shipmentId = shipmentIds[Math.floor(Math.random() * shipmentIds.length)];
+  const status = randomStatus();
+  const location = randomLocation();
+  const notes = `Automated update for ${shipmentId}`;
+  const timestamp = new Date().toISOString();
+  return `${shipmentId},${status},${location},${notes},${timestamp}\n`;
+}
+setInterval(() => {
+  const line = generateUpdate();
+  fs.appendFileSync(updatesFile, line);
+  console.log("Generated simulated ERP update:", line.trim());
+}, 60_000);
+console.log("ERP Simulator running...");
